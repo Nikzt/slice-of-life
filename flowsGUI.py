@@ -499,7 +499,9 @@ class FlowsApp(tkinter.Tk):
     
     def fileBrowser(self):
         from tkinter.filedialog import askopenfilename
-        self.filename = askopenfilename(filetypes=(("CSV Files", "*.csv"),("All Files","*.*")))
+        self.tempFilename = askopenfilename(filetypes=(("CSV Files", "*.csv"),("All Files","*.*")))
+        if not (self.tempFilename == '' and self.filename != ''):
+            self.filename = self.tempFilename
         if self.filename != '':
             self.headerButton.config(state="normal")
             self.fileLabel.config(text=self.filename, borderwidth=2, relief=RIDGE)
