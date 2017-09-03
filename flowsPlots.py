@@ -26,7 +26,7 @@ class PlotsApp(tkinter.Tk):
 
 	def __init__(self):
 		self.filename = ''
-
+		self.plot_index = 0
 
 
 		tkinter.Tk.__init__(self)
@@ -34,6 +34,8 @@ class PlotsApp(tkinter.Tk):
 		self.initFrame = Frame()
 		self.displayFrame = Frame()
 		self.plotFrame = Frame()
+		self.plotOptionList = ["Flux vs. Time of Day", "Density vs. Time of Day", "LoS vs. Time of Day",
+										"Flux vs. Density", "LoS vs. Density"]
 
 		self.browseButton = Button(self.initFrame, text="Select File", padx=5,
 									pady=5, command=lambda : self.fileBrowser())
@@ -57,6 +59,11 @@ class PlotsApp(tkinter.Tk):
 									pady=5, command=lambda : self.exportData())
 		self.exportErrorsButton = Button(self.displayFrame, text="Export Error (SD) Data", padx=5,
 									pady=5, command=lambda : self.exportErrors())
+									
+		self.nextButton = Button(self.plotFrame, text=">", padx=5,
+									pady=5, command=lambda : self.nextPlot("next"), state="disabled")
+		self.prevButton = Button(self.plotFrame, text="<", padx=5,
+									pady=5, command=lambda : self.nextPlot("prev"), state="disabled")
 
 
 
@@ -99,6 +106,8 @@ class PlotsApp(tkinter.Tk):
 		self.densPlotButton.grid(row=1, column=2)
 		self.fluxDensButton.grid(row=1, column=3)
 		self.losDensButton.grid(row=1, column=4)
+		self.nextButton.grid(row=0, column=2)
+		self.prevButton.grid(row=0, column=0)
 		
 		# Read .csv into DataFrame and group by time of day
 		self.data = pds.read_csv(self.filename, index_col="TSLICE_START")
@@ -106,6 +115,7 @@ class PlotsApp(tkinter.Tk):
 	
 		
 		self.means = df.mean()
+		self.groupByTime()
 		self.newMeans = copy.deepcopy(self.means)
 		self.newMeans.reset_index(inplace=True)
 		self.newMeans.set_index("DENSITY", inplace=True)
@@ -126,7 +136,7 @@ class PlotsApp(tkinter.Tk):
 		dfPlot.set_ylim(0)
 		self.canvas = FigureCanvasTkAgg(self.fig, master=self.plotFrame)
 		self.canvas.show()
-		self.canvas.get_tk_widget().grid(row=0, column=0)
+		self.canvas.get_tk_widget().grid(row=0, column=1)
 
 		self.fluxMean.config(text="Flux Mean: " + str(self.data["FLUX"].mean()))
 		self.densityMean.config(text="Density Mean: " + str(self.data["DENSITY"].mean()))
@@ -158,27 +168,45 @@ class PlotsApp(tkinter.Tk):
 		
 	def fluxDensPlot(self):
 		
-		self.dfFluxDens = pds.DataFrame(data = self.newMeans["FLUX"], index = self.newMeans.index)
-		self.ax.clear()
-		self.ax = self.fig.add_subplot(111)
-		dfPlot = self.dfFluxDens.plot(ax=self.ax, marker="o", yerr=self.errors["FLUX"], xerr=self.errors["DENSITY"])
-		dfPlot.set_xlabel("Density")
-		dfPlot.set_ylabel("Flux")
-		dfPlot.set_ylim(0) 
-		dfPlot.set_xlim(0,70)
-		self.canvas.draw()
+		self.nextPlot("fluxDens")
+		self.prevButton.config(state="normal")
+		self.nextButton.config(state="normal")
 		
 	def losDensPlot(self):
 		
 		self.dfLosDens = pds.DataFrame(data = self.newMeans["MEANDUR"], index = self.newMeans.index)
 		self.ax.clear()
 		self.ax = self.fig.add_subplot(111)
-		dfPlot = self.dfLosDens.plot(ax=self.ax, marker="o", yerr=self.errors["MEANDUR"], xerr=self.errors["DENSITY"])
+		dfPlot = self.dfLosDens.plot(ax=self.ax, style="o", yerr=self.errors["MEANDUR"], xerr=self.errors["DENSITY"])
 		dfPlot.set_xlabel("Density")
 		dfPlot.set_ylabel("LoS")
 		dfPlot.set_ylim(0)
 		dfPlot.set_xlim(0,70)
 		self.canvas.draw()
+	
+	def nextPlot(self, calling_button):
+		if calling_button == "next":
+			self.plot_index += 1
+			if self.plot_index >= len(self.time_list):
+				self.plot_index = 0
+		elif calling_button == "prev":
+			self.plot_index -= 1
+			if self.plot_index < 0:
+				self.plot_index = len(self.time_list) - 1
+		else:
+			self.plot_index = 0
+		self.dfNext = pds.DataFrame(data = self.plot_dict[self.time_list[self.plot_index]].set_index("FLUX")["DENSITY"])
+		self.ax.clear()
+		self.ax = self.fig.add_subplot(111)
+		dfPlot = self.dfNext.plot(ax=self.ax, style="o", title=self.time_list[self.plot_index], legend=None)
+		dfPlot.set_xlabel("Density")
+		dfPlot.set_ylabel("Flux")
+		dfPlot.set_ylim(0,70)
+		dfPlot.set_xlim(0,250)
+		self.canvas.draw()
+		
+		
+			
 
 	def timeOfDayConvert(self, df):
 		df.reset_index(inplace = True)
@@ -187,7 +215,10 @@ class PlotsApp(tkinter.Tk):
 		#df = df.append(rrow)
 		df["TSLICE_START"] =  df["TSLICE_START"].apply(lambda x : numToTime(x))
 		df.set_index("TSLICE_START", inplace=True)
+		self.group_df = copy.deepcopy(df)
 		new_df = df.groupby(df.index)
+		
+		
 
 		return new_df
 
@@ -205,7 +236,21 @@ class PlotsApp(tkinter.Tk):
 		from tkinter.filedialog import asksaveasfilename
 		filename = asksaveasfilename(filetypes=(("CSV Files", "*.csv"),("All Files","*.*")), defaultextension = ".csv")
 		self.errors.to_csv(filename)
+	
+	def groupByTime(self):
+		time_series = self.means.index
+		self.time_list = time_series.tolist()
+		self.plot_dict = {}
+		for time in self.time_list:
+			for index, row in self.group_df.iterrows():
+				if index in self.plot_dict.keys():
+					self.plot_dict[index] = self.plot_dict[index].append(row)
+					
+				else:
+					self.plot_dict[index] = pds.DataFrame()
 		
+			
+	
 		
 
 		
