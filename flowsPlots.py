@@ -37,10 +37,13 @@ class PlotsApp(tkinter.Tk):
 		self.plotOptionList = ["Flux vs. Time of Day", "Density vs. Time of Day", "LoS vs. Time of Day",
 										"Flux vs. Density", "LoS vs. Density"]
 
-		self.browseButton = Button(self.initFrame, text="Select File", padx=5,
-									pady=5, command=lambda : self.fileBrowser())
-		self.readDataButton = Button(self.initFrame, text="Read Data", padx=5,
-									pady=5, state="disabled", command=lambda : self.readData())
+		self.plotVar = StringVar(value = "Flux vs. Time of Day")
+		self.plotMenu = ttk.OptionMenu(self.displayFrame,
+                      self.plotVar,"Flux vs. Time of Day", *self.plotOptionList)
+					  
+		self.plotButton = ttk.Button(self.displayFrame, text="Display Plot", command=lambda : self.displayPlot())
+		self.browseButton = ttk.Button(self.initFrame, text="Select File", command=lambda : self.fileBrowser())
+		self.readDataButton = ttk.Button(self.initFrame, text="Read Data", state="disabled", command=lambda : self.readData())
 
 		self.fluxPlotButton = Button(self.displayFrame, text="Plot Flux", padx=5,
 									pady=5, command=lambda : self.fluxPlot())
@@ -53,17 +56,12 @@ class PlotsApp(tkinter.Tk):
 		self.losDensButton = Button(self.displayFrame, text="Plot LoS/Density", padx=5,
 									pady=5, command=lambda : self.losDensPlot())							
 									
-		self.exportPlotButton = Button(self.displayFrame, text="Export Plot", padx=5,
-									pady=5, command=lambda : self.exportPlot())
-		self.exportDataButton = Button(self.displayFrame, text="Export Mean Data", padx=5,
-									pady=5, command=lambda : self.exportData())
-		self.exportErrorsButton = Button(self.displayFrame, text="Export Error (SD) Data", padx=5,
-									pady=5, command=lambda : self.exportErrors())
+		self.exportPlotButton = ttk.Button(self.displayFrame, text="Export Plot", command=lambda : self.exportPlot())
+		self.exportDataButton = ttk.Button(self.displayFrame, text="Export Mean Data", command=lambda : self.exportData())
+		self.exportErrorsButton = ttk.Button(self.displayFrame, text="Export Error (SD) Data", command=lambda : self.exportErrors())
 									
-		self.nextButton = Button(self.plotFrame, text=">", padx=5,
-									pady=5, command=lambda : self.nextPlot("next"), state="disabled")
-		self.prevButton = Button(self.plotFrame, text="<", padx=5,
-									pady=5, command=lambda : self.nextPlot("prev"), state="disabled")
+		self.nextButton = ttk.Button(self.plotFrame, text=">", command=lambda : self.nextPlot("next"), state="disabled")
+		self.prevButton = ttk.Button(self.plotFrame, text="<", command=lambda : self.nextPlot("prev"), state="disabled")
 
 
 
@@ -83,12 +81,21 @@ class PlotsApp(tkinter.Tk):
 		self.densityMean.grid(row=3, column=1)
 		self.fluxVar.grid(row=4, column=1)
 		self.densityVar.grid(row=5, column=1)
-		self.exportPlotButton.grid(row=6, column=1)
-		self.exportDataButton.grid(row=7, column=1)
-		self.exportErrorsButton.grid(row=8, column=1)
+		
 
-
-
+	def displayPlot(self):
+		val = self.plotVar.get()
+		if val == "Flux vs. Time of Day":
+			self.fluxPlot()
+		elif val == "Density vs. Time of Day":
+			self.densPlot()
+		elif val == "LoS vs. Time of Day":
+			self.losPlot()
+		elif val == "Flux vs. Density":
+			self.fluxDensPlot()
+		elif val == "LoS vs. Density":
+			self.losDensPlot()
+		
 	def fileBrowser(self):
 		from tkinter.filedialog import askopenfilename
 		self.filename = askopenfilename(filetypes=(("CSV Files", "*.csv"),("All Files","*.*")))
@@ -101,13 +108,19 @@ class PlotsApp(tkinter.Tk):
 	def readData(self):
 		
 		# Display plot buttons
-		self.fluxPlotButton.grid(row=1, column=0)
-		self.losPlotButton.grid(row=1, column=1)
-		self.densPlotButton.grid(row=1, column=2)
-		self.fluxDensButton.grid(row=1, column=3)
-		self.losDensButton.grid(row=1, column=4)
+		#self.fluxPlotButton.grid(row=1, column=0)
+		#self.losPlotButton.grid(row=1, column=1)
+		#self.densPlotButton.grid(row=1, column=2)
+		#self.fluxDensButton.grid(row=1, column=3)
+		#self.losDensButton.grid(row=1, column=4)
+		self.plotButton.grid(row=1, column=1)
+		self.plotMenu.grid(row=1, column=0)
 		self.nextButton.grid(row=0, column=2)
 		self.prevButton.grid(row=0, column=0)
+		
+		self.exportPlotButton.grid(row=6, column=1)
+		self.exportDataButton.grid(row=7, column=1)
+		self.exportErrorsButton.grid(row=8, column=1)
 		
 		# Read .csv into DataFrame and group by time of day
 		self.data = pds.read_csv(self.filename, index_col="TSLICE_START")
@@ -248,7 +261,7 @@ class PlotsApp(tkinter.Tk):
 					
 				else:
 					self.plot_dict[index] = pds.DataFrame()
-		
+	
 			
 	
 		
