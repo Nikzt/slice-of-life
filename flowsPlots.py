@@ -124,6 +124,10 @@ class PlotsApp(tkinter.Tk):
 		
 		# Read .csv into DataFrame and group by time of day
 		self.data = pds.read_csv(self.filename, index_col="TSLICE_START")
+		self.fluxMax = self.data["FLUX"].max()
+		self.densMax = self.data["DENSITY"].max()
+		self.losMax = self.data["MEANDUR"].max()
+		
 		df = self.timeOfDayConvert(pds.DataFrame(self.data))
 	
 		
@@ -157,6 +161,8 @@ class PlotsApp(tkinter.Tk):
 		self.densityVar.config(text="Density SD: " + str(self.data["DENSITY"].std()))
 
 	def fluxPlot(self):
+		self.nextButton.config(state="disabled")
+		self.prevButton.config(state="disabled")
 		self.ax.clear()
 		self.ax = self.fig.add_subplot(111)
 		dfPlot = self.dfFlux.plot(ax=self.ax, marker="o", yerr=self.errors)
@@ -165,6 +171,8 @@ class PlotsApp(tkinter.Tk):
 		self.canvas.draw()
 		
 	def losPlot(self):
+		self.nextButton.config(state="disabled")
+		self.prevButton.config(state="disabled")
 		self.ax.clear()
 		self.ax = self.fig.add_subplot(111)
 		dfPlot = self.dfLOS.plot(ax=self.ax, marker="o", yerr=self.errors)
@@ -172,6 +180,8 @@ class PlotsApp(tkinter.Tk):
 		dfPlot.set_ylim(0)
 		self.canvas.draw()
 	def densPlot(self):
+		self.nextButton.config(state="disabled")
+		self.prevButton.config(state="disabled")
 		self.ax.clear()
 		self.ax = self.fig.add_subplot(111)
 		dfPlot = self.dfDensity.plot(ax=self.ax, marker="o", yerr=self.errors)
@@ -181,21 +191,18 @@ class PlotsApp(tkinter.Tk):
 		
 	def fluxDensPlot(self):
 		
+		self.plot_index = 0
+		self.prevButton.config(state="normal", command=lambda : self.nextPlot("prev"))
+		self.nextButton.config(state="normal", command=lambda : self.nextPlot("next"))
 		self.nextPlot("fluxDens")
-		self.prevButton.config(state="normal")
-		self.nextButton.config(state="normal")
 		
 	def losDensPlot(self):
 		
-		self.dfLosDens = pds.DataFrame(data = self.newMeans["MEANDUR"], index = self.newMeans.index)
-		self.ax.clear()
-		self.ax = self.fig.add_subplot(111)
-		dfPlot = self.dfLosDens.plot(ax=self.ax, style="o", yerr=self.errors["MEANDUR"], xerr=self.errors["DENSITY"])
-		dfPlot.set_xlabel("Density")
-		dfPlot.set_ylabel("LoS")
-		dfPlot.set_ylim(0)
-		dfPlot.set_xlim(0,70)
-		self.canvas.draw()
+		self.plot_index = 0
+		
+		self.prevButton.config(state="normal", command=lambda : self.nextPlotLos("prev"))
+		self.nextButton.config(state="normal", command=lambda : self.nextPlotLos("next"))
+		self.nextPlotLos("losDens")
 	
 	def nextPlot(self, calling_button):
 		if calling_button == "next":
@@ -214,10 +221,30 @@ class PlotsApp(tkinter.Tk):
 		dfPlot = self.dfNext.plot(ax=self.ax, style="o", title=self.time_list[self.plot_index], legend=None)
 		dfPlot.set_xlabel("Density")
 		dfPlot.set_ylabel("Flux")
-		dfPlot.set_ylim(0,70)
-		dfPlot.set_xlim(0,250)
+		dfPlot.set_ylim(0, self.densMax + 10)
+		dfPlot.set_xlim(0, self.fluxMax + 10)
 		self.canvas.draw()
 		
+	def nextPlotLos(self, calling_button): 
+		if calling_button == "next":
+			self.plot_index += 1
+			if self.plot_index >= len(self.time_list):
+				self.plot_index = 0
+		elif calling_button == "prev":
+			self.plot_index -= 1
+			if self.plot_index < 0:
+				self.plot_index = len(self.time_list) - 1
+		else:
+			self.plot_index = 0
+		self.dfNext = pds.DataFrame(data = self.plot_dict[self.time_list[self.plot_index]].set_index("MEANDUR")["DENSITY"])
+		self.ax.clear()
+		self.ax = self.fig.add_subplot(111)
+		dfPlot = self.dfNext.plot(ax=self.ax, style="o", title=self.time_list[self.plot_index], legend=None)
+		dfPlot.set_xlabel("Density")
+		dfPlot.set_ylabel("LoS")
+		dfPlot.set_ylim(0, self.densMax + 10)
+		dfPlot.set_xlim(0, self.losMax + 0.1)
+		self.canvas.draw()
 		
 			
 
@@ -238,17 +265,20 @@ class PlotsApp(tkinter.Tk):
 	def exportPlot(self):
 		from tkinter.filedialog import asksaveasfilename
 		filename = asksaveasfilename(filetypes=(("PDF Files", "*.pdf"),("All Files","*.*")))
-		self.fig.savefig(filename)
+		if filename != '':
+			self.fig.savefig(filename)
 		
 	def exportData(self):
 		from tkinter.filedialog import asksaveasfilename
 		filename = asksaveasfilename(filetypes=(("CSV Files", "*.csv"),("All Files","*.*")), defaultextension = ".csv")
-		self.means.to_csv(filename)
+		if filename != '':
+			self.means.to_csv(filename)
 		
 	def exportErrors(self):
 		from tkinter.filedialog import asksaveasfilename
 		filename = asksaveasfilename(filetypes=(("CSV Files", "*.csv"),("All Files","*.*")), defaultextension = ".csv")
-		self.errors.to_csv(filename)
+		if filename != '':
+			self.errors.to_csv(filename)
 	
 	def groupByTime(self):
 		time_series = self.means.index

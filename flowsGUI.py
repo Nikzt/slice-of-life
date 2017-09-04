@@ -7,10 +7,9 @@ import DataStructures
 from tkinter import messagebox
 
 from DataStructures import *
-#TODO: ability to remove columns in column defining
+#TODO: 
 #      display for curfews
 #      ability to remove curfews
-#      checkbox for printing agents or not
 #      ability to remove segments
 
 # Number of segments
