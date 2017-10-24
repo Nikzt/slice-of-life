@@ -50,11 +50,43 @@ their t1 entry).
 The "Define Curfews" tab lets you choose an upper limit (t_curfew) for how long a patient should be in a given care
 segment, as well as how to handle patients that exceed this curfew:
 
-Option 1 - Send patient to next care segment after exceeding curfew.
+__Option 1__ - Send patient to next care segment after exceeding curfew.
 
-Option 2 - Put patient in a "limbo state" for time they spend in that segment that exceeds curfew, where their speed (rate of progress through care segments) while in this state is reduced to 0.
+__Option 2__ - Put patient in a "limbo state" for time they spend in that segment that exceeds curfew, where their speed (rate of progress through care segments) while in this state is reduced to 0.
 
 
 After finishing your specifications, click "Read Data", and a new window will appear to allow you to define
 care segments and add filters to these segments.
+
+The two option menus are used to set the start and end of the care segment, and "Add Segment" adds this to a list
+above these buttons with a default name. Clicking on a segment will show an editing menu at the bottom of the window
+where you can rename the segment and add filters to the segment.
+
+Filters are added to a segment by choosing a visit characteristic to filter by, an operator, and a value which 
+you type in manually. When a filter is added to that segment, patients with visit characteristics not adhering
+to the filters will not be included in the time slices in that segment.
+
+
+Finally, you can click "Generate Report", and a folder called "flows" will be created with one .csv file for each
+segment you defined. Each .csv folder has rows with the start of the time slice, and associated traffic flow calculations.
+If writing patients was enabled, it will also include rows of patients in each time slice.
+
+## FlowsPlots.py
+Run this program in the same way you ran flowsGUI.py. You will be greeted with a similar option to choose files,
+but the input for this program is one of the .csv files outputted by flowsGUI.py. Clicking "Read Data" will convert
+the input .csv file into the datastructures necessary to plot the data. Please note that this only works on the .csv files
+that __do not__ have patients written with each time slice. This program analyzes the data by time of day, so also
+make sure that the delta_t of the time slices divide 24 hours evenly.
+
+At this point, you will see a frame with the currently displayed plot, as well as buttons to change which plot is displayed.
+For all the "vs. Time of Day" plots, this is pretty straightforward. Just choose it from the menu and click "Display Plot".
+For the "vs. Density" plots, you can also use the arrow buttons next to the plot frame to view this data hour by hour.
+
+The "Export Plot" button exports an image of the currently displayed plot.
+
+"Export Means" exports a .csv file that makes up the raw data for the plot points, and "Export Errors" exports the raw data
+for the error bars.
+
+
+
 
