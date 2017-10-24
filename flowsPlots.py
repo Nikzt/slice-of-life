@@ -10,6 +10,11 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
+
+"""
+ A helper function to convert an excel date (represented by
+ a number) to a readable date-time format
+"""
 def numToTime(num):
   print(num)
   tup = list(xlrd.xldate_as_tuple(round(num, 5) % 1, 0))
@@ -28,7 +33,7 @@ class PlotsApp(tkinter.Tk):
 		self.filename = ''
 		self.plot_index = 0
 
-
+		# Define GUI objects -------------------------------------------------
 		tkinter.Tk.__init__(self)
 		self.wm_title("ED Flows Analysis Tool")
 		self.initFrame = Frame()
@@ -82,7 +87,7 @@ class PlotsApp(tkinter.Tk):
 		self.fluxVar.grid(row=4, column=1)
 		self.densityVar.grid(row=5, column=1)
 		
-
+	# Displays selected plot
 	def displayPlot(self):
 		val = self.plotVar.get()
 		if val == "Flux vs. Time of Day":
@@ -105,14 +110,10 @@ class PlotsApp(tkinter.Tk):
 		else:
 			self.readDataButton.config(state="disabled")
 
+	# Initializes all of the data into pandas data structures, and displays
+	# all GUI objects
 	def readData(self):
-		
-		# Display plot buttons
-		#self.fluxPlotButton.grid(row=1, column=0)
-		#self.losPlotButton.grid(row=1, column=1)
-		#self.densPlotButton.grid(row=1, column=2)
-		#self.fluxDensButton.grid(row=1, column=3)
-		#self.losDensButton.grid(row=1, column=4)
+
 		self.plotButton.grid(row=1, column=1)
 		self.plotMenu.grid(row=1, column=0)
 		self.nextButton.grid(row=0, column=2)
@@ -160,6 +161,7 @@ class PlotsApp(tkinter.Tk):
 		self.fluxVar.config(text="Flux SD: " + str(self.data["FLUX"].std()))
 		self.densityVar.config(text="Density SD: " + str(self.data["DENSITY"].std()))
 
+	# Initialize and display flux vs. time plot
 	def fluxPlot(self):
 		self.nextButton.config(state="disabled")
 		self.prevButton.config(state="disabled")
@@ -169,7 +171,8 @@ class PlotsApp(tkinter.Tk):
 		dfPlot.set_xlabel("Time of Day")
 		dfPlot.set_ylim(0)
 		self.canvas.draw()
-		
+	
+	# Initialize and display length of stay vs. time plot
 	def losPlot(self):
 		self.nextButton.config(state="disabled")
 		self.prevButton.config(state="disabled")
@@ -179,6 +182,8 @@ class PlotsApp(tkinter.Tk):
 		dfPlot.set_xlabel("Time of Day")
 		dfPlot.set_ylim(0)
 		self.canvas.draw()
+	
+	# Initialize and display density vs. time plot
 	def densPlot(self):
 		self.nextButton.config(state="disabled")
 		self.prevButton.config(state="disabled")
@@ -189,21 +194,25 @@ class PlotsApp(tkinter.Tk):
 		dfPlot.set_ylim(0)
 		self.canvas.draw()
 		
+	# Initialize and display flux vs. density plot for first time-of-day
+	# Sets next/prev buttons to step through flux vs. density for each time-of-day
 	def fluxDensPlot(self):
 		
 		self.plot_index = 0
 		self.prevButton.config(state="normal", command=lambda : self.nextPlot("prev"))
 		self.nextButton.config(state="normal", command=lambda : self.nextPlot("next"))
 		self.nextPlot("fluxDens")
-		
+	
+	# Initialize and display LoS vs. density plot for first time-of-day
+	# Sets next/prev buttons to step through LoS vs. density for each time-of-day
 	def losDensPlot(self):
 		
 		self.plot_index = 0
-		
 		self.prevButton.config(state="normal", command=lambda : self.nextPlotLos("prev"))
 		self.nextButton.config(state="normal", command=lambda : self.nextPlotLos("next"))
 		self.nextPlotLos("losDens")
 	
+	# Displays next (or previous) flux vs. density plot
 	def nextPlot(self, calling_button):
 		if calling_button == "next":
 			self.plot_index += 1
@@ -225,6 +234,7 @@ class PlotsApp(tkinter.Tk):
 		dfPlot.set_xlim(0, self.fluxMax + 10)
 		self.canvas.draw()
 		
+	# Displays next (or previous) LoS vs. density plot
 	def nextPlotLos(self, calling_button): 
 		if calling_button == "next":
 			self.plot_index += 1
@@ -247,7 +257,7 @@ class PlotsApp(tkinter.Tk):
 		self.canvas.draw()
 		
 			
-
+	# Converts time slice start times to time of day
 	def timeOfDayConvert(self, df):
 		df.reset_index(inplace = True)
 		df["TSLICE_START"] = df["TSLICE_START"] % 1
@@ -257,9 +267,6 @@ class PlotsApp(tkinter.Tk):
 		df.set_index("TSLICE_START", inplace=True)
 		self.group_df = copy.deepcopy(df)
 		new_df = df.groupby(df.index)
-		
-		
-
 		return new_df
 
 	def exportPlot(self):
@@ -280,6 +287,7 @@ class PlotsApp(tkinter.Tk):
 		if filename != '':
 			self.errors.to_csv(filename)
 	
+	# Combines data into groups by time of day
 	def groupByTime(self):
 		time_series = self.means.index
 		self.time_list = time_series.tolist()

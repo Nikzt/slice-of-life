@@ -7,10 +7,6 @@ import DataStructures
 from tkinter import messagebox
 
 from DataStructures import *
-#TODO: 
-#      display for curfews
-#      ability to remove curfews
-#      ability to remove segments
 
 # Number of segments
 seg_num = 0
@@ -21,6 +17,8 @@ filt_nums = []
 # filt_buttons[i] is the filter ttk.Buttons in the i'th segment
 filt_buttons = []
 
+
+# helper function to convert hh/mm format to excel date-time format
 def hmToFloatConvert(hr, mn):
     hrc = hr
     mnc = mn
@@ -36,7 +34,7 @@ def hmToFloatConvert(hr, mn):
     return (h / 24) + (m / (24*60))
 
 
-
+# helper function to add time column names to segment name
 def tiConvert(name, num, char):
     for i in range(0, len(name)):
         if name[i] == '|':
@@ -448,6 +446,7 @@ class FlowsApp(tkinter.Tk):
         
     """
     Called when the 'Add Filter' ttk.Button is clicked
+    Adds a filter to the global list of filters.
     """
     def addFilter(self, segnumber):
         global filt_buttons
@@ -487,9 +486,10 @@ class FlowsApp(tkinter.Tk):
     
     """
     Called when a ttk.Button representing a filter is clicked
+    Removes filter from all data structures that keep track of it
     """
     def deleteFilter(self, index, segnumber):
-        # Remove filter from all data structures that keep track of it
+        
         global filt_buttons
         filt_buttons[segnumber][index].destroy()
         del(filt_buttons[segnumber][index])
@@ -508,12 +508,14 @@ class FlowsApp(tkinter.Tk):
             self.headerButton.config(state="disabled")
             self.fileLabel.config(text=self.filename, borderwidth=0)
     
+    # adds a curfew to the list of curfews
     def addCurfew(self, tcol1Key, tcol2Key, option, value):
         tcol1 = self.segDefDict[tcol1Key]
         tcol2 = self.segDefDict[tcol2Key]
         val = float(value)
         flows.addCurfew(tcol1, tcol2, option, val)
-
+    
+    # Updates the visual display of defined columned
     def displayArea(self, coord, name, char, colnum):
         displayLabelFrame = ttk.Frame(self.displayFrame)
         displayLabel = ttk.Label(displayLabelFrame,
@@ -531,7 +533,8 @@ class FlowsApp(tkinter.Tk):
         displayLabel.grid(row=0, column=0)
         deleteColumnButton.grid(row=0, column=1)
         displayLabelFrame.grid(row=coord[0], column=coord[1])
-
+    
+    # Deletes a visit characteristic column or time column
     def deleteColumn(self, name, coord, char, colnum, buttonIndex):
         
         if char == "t":
@@ -548,7 +551,6 @@ class FlowsApp(tkinter.Tk):
             self.cColButtons[buttonIndex].destroy()
             #del self.cColButtons[buttonIndex-1]
             print(self.cCols)
-	
     """
     Call writeData from flows.py
     """
@@ -585,6 +587,8 @@ class FlowsApp(tkinter.Tk):
         filt_buttons.append([])
         seg_num += 1
         filt_nums.append(0)
+
+
     def updateButtons(self):
         if (self.tColVar.get() == "Choose Column"):
             self.tColButton.config(state=DISABLED)
@@ -592,9 +596,10 @@ class FlowsApp(tkinter.Tk):
         else:
             self.tColButton.config(state="normal")
             self.cColButton.config(state="normal")           
-        
+    
+    # Adds a time column
     def addTCol(self):
-        # Add time column
+        
         key = self.tColVar.get()
         colnum = self.header[key]
         if colnum not in self.tCols:
@@ -640,9 +645,9 @@ class FlowsApp(tkinter.Tk):
         self.displayFrame.pack(side=BOTTOM)  
         print("Added time column")
         
-    
+    # Adds a visit characteristic column
     def addCCol(self):
-        # Add visit characteristic column
+        
         key = self.tColVar.get()
         colnum = self.header[key]
         if colnum not in self.cCols:
@@ -677,9 +682,8 @@ class FlowsApp(tkinter.Tk):
     
     """
     Function called when ttk.Button for 'Read Data' is clicked.
-    Calls the function callFromGUI from flows.py.
-    If user defined inputs, then calls with those entries.
-    Otherwise calls with default arguments.
+    Calls the function callFromGUI from flows.py, using the 
+    user defined inputs.
     """
     def callFlows(self):
         
@@ -702,7 +706,7 @@ class FlowsApp(tkinter.Tk):
         if len(self.tCols) < 2:
             messagebox.showinfo("Error", "Please pick at least two time columns\nto read from the file")
             
-        DataStructures.printAgents = self.patientVar.get()
+        DataStructures.printPatients = self.patientVar.get()
         flows.missingTime = self.missingTimeVar.get()
         flows.callFromGUI(self.filename, self.tCols, start_time, end_time, dt, self.cCols)
 

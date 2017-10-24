@@ -9,8 +9,8 @@ from DataStructures import *
 # list of TimeSlices
 slices = []
 
-# list of Agents
-agents = []
+# list of Patients
+patients = []
 
 # list of Segments
 segments = []
@@ -23,6 +23,8 @@ curfews = []
 
 # how to handle missing times
 missingTime = "boi"
+
+# track invalid data to put in error report
 decreasingTimeCount = 0
 # ---------------------- #
 
@@ -48,9 +50,9 @@ csv_line: a line read in from a csv file
 time_cols: list of indices in csv_line which contain times.
 
 --Output--
-an Agent data structure, constructed from the times in csv_line
+a Patient data structure, constructed from the times in csv_line
 """
-def convertLineToAgent(csv_line, time_cols):
+def convertLineToPatient(csv_line, time_cols):
   global decreasingTimeCount
   # Convert raw csv line to list
   line = process_line(csv_line)
@@ -72,20 +74,20 @@ def convertLineToAgent(csv_line, time_cols):
         times.append(-1)
     i += 1
   times = [round(x, 5) for x in times]
-    # Use time fields to construct an Agent
-  agent = Agent(times)
+    # Use time fields to construct an Patient
+  patient = Patient(times)
   
-  # throw out agent if decreasing times
-  prev_t = agent.times[0]
-  for t in agent.times[1:]:
+  # throw out patient if decreasing times
+  prev_t = patient.times[0]
+  for t in patient.times[1:]:
     if t < prev_t:
       decreasingTimeCount += 1
       return None
     prev_t = t
   
-  agent = curfewCheck(agent)
+  patient = curfewCheck(patient)
   
-  return agent
+  return patient
 	
 """
 --Input--
@@ -114,31 +116,31 @@ time_cols: list of indices of columns which contain times
 extra_fields: list of indices of columns which contain extra fields
 
 --Output--
-Lines from .csv file are converted to Agents, stored in the global list 'agents'.
+Lines from .csv file are converted to Patients, stored in the global list 'patients'.
 Timeslice data structures initialized, stored in the global list 'slices'
 """
 def readData(init_time, end_time, in_fp, time_cols, extra_fields):
   global slices
-  global agents  
+  global patients  
   
   lines = in_fp.readlines()[1:]
   slices = initTimeSlices(init_time, end_time) # this holds all timeslices
 
-  # Convert all lines to agents
+  # Convert all lines to patients
   for line in lines:
-    agent = convertLineToAgent(line, time_cols)
+    patient = convertLineToPatient(line, time_cols)
     
-    # If an agent is None or 0, there was a problem in converting it from a line
-    if agent != None and agent != 0:
-      if (agent.t_in < end_time) and (agent.t_out >= init_time):
+    # If an patient is None or 0, there was a problem in converting it from a line
+    if patient != None and patient != 0:
+      if (patient.t_in < end_time) and (patient.t_out >= init_time):
 
         fields = process_line(line)
         
         # Extra data (ie. visit charactertistics) added
         for extra_index in extra_fields:
-          agent.addData(fields[int(extra_index)])
+          patient.addData(fields[int(extra_index)])
           
-      agents.append(agent)
+      patients.append(patient)
 
       
 """
@@ -162,13 +164,13 @@ def writeData():
     # Copy of slices, so that empty slices can be used for each new segment
     tslices = copy.deepcopy(slices)
     for tslice in tslices:
-      for agent in agents:
+      for patient in patients:
         
-        # Check conditions required of agent to fit into current tslice
-        if filterCheck(agent, seg) == True:
-          if not ((agent.times[seg.t_in_col]) < 0 or (agent.times[seg.t_out_col]) < 0):
-            if (agent.times[seg.t_in_col] < tslice.interval[1] ) and (agent.times[seg.t_out_col] >= tslice.interval[0]):
-              tslice.addAgent(agent)
+        # Check conditions required of patient to fit into current tslice
+        if filterCheck(patient, seg) == True:
+          if not ((patient.times[seg.t_in_col]) < 0 or (patient.times[seg.t_out_col]) < 0):
+            if (patient.times[seg.t_in_col] < tslice.interval[1] ) and (patient.times[seg.t_out_col] >= tslice.interval[0]):
+              tslice.addPatient(patient)
       
       tslice.writeSlice(out_fd, seg.t_in_col, seg.t_out_col)
     out_fd.close()
@@ -192,18 +194,17 @@ A function to initiate the data reading phase from the GUI.
 Opens the user-specified input file and reads it into data structures.
 """
 def callFromGUI(in_file, time_cols, init_time, end_time, new_dt, extra_fields):
-  global dt, slices, agents, segments
+  global dt, slices, patients, segments
   dt = new_dt
   DataStructures.dt = new_dt
   fp = open(in_file, 'r')
   slices = []
-  agents = []
+  patients = []
   segments = []
   readData(init_time, end_time, fp, time_cols, extra_fields)
   fp.close()
   
 """
-
 Add a segment to the global list of segments
 """
 def addSegment(cols, name):
@@ -212,37 +213,19 @@ def addSegment(cols, name):
   segments.append(seg)
   
 """
-includeFilter: include agents which contain specific values
-Returns true if agent passes all includeFilters in seg.
+Runs each filter on a patient in a given segment
 """
-#DELETE THIS
-def includeFilterCheck(agent, seg):
-  for filt in seg.includeFilters:
-    # filt[0] -> index of data to be filtered by
-    # filt[1] -> data must be in this set of values
-    if len(agent.extra_data) == 0:
-      # fails filter check if agent contains no data to check
-      return False
-    if str(agent.extra_data[filt[0]]) not in filt[1]:
-      return False
-  return True
-    
-    
-def filterCheck(agent, seg):
+def filterCheck(patient, seg):
   for filt in seg.filters:
-    if len(agent.extra_data) == 0:
+    if len(patient.extra_data) == 0:
       return False
-    if not filt.runFilter(agent.extra_data[filt.c_num]):
+    if not filt.runFilter(patient.extra_data[filt.c_num]):
       return False
   return True
 
 """
 Adds an includeFilter to segment specified by seg_index.
 """
-#DELETE THIS
-def addIncludeFilter(seg_index, filt):
-  global segments
-  segments[seg_index].addIncludeFilter(filt)
   
 def addFilter(op, val, c_num, seg_index):
   global segments
@@ -268,24 +251,31 @@ def readHeader(filename):
   print("Header Data Read")
   return header
 
+"""
+Adds a curfew to the global list of curfews.
+"""
 def addCurfew(tcol1, tcol2, option, val):
   global curfews
   curf = Curfew(tcol1, tcol2, option, val)
   curfews.append(curf)
   print(curfews)
   
-def curfewCheck(agent):
+"""
+Takes a patient, and re-adjusts their time data to
+adhere to the currently defined curfews
+"""
+def curfewCheck(patient):
   global curfews
-  new_agent = agent
+  new_patient = patient
   for curf in curfews:
-    if new_agent.times[curf.t_end_index] - new_agent.times[curf.t_start_index] > curf.time:
+    if new_patient.times[curf.t_end_index] - new_patient.times[curf.t_start_index] > curf.time:
       if curf.c_type == "Option 1":
-        new_agent.times[curf.t_end_index] = new_agent.times[curf.t_start_index] + curf.time
+        new_patient.times[curf.t_end_index] = new_patient.times[curf.t_start_index] + curf.time
 
       else:
         DataStructures.limbo_states[curf.t_start_index] = curf.time
-        #new_agent.times.insert(curf.t_start_index, new_agent.times[curf.t_start_index] + curf.time)
+        #new_patient.times.insert(curf.t_start_index, new_patient.times[curf.t_start_index] + curf.time)
       print("Curfewed!")
-      print(new_agent.times)      
+      print(new_patient.times)      
 
-  return new_agent
+  return new_patient
