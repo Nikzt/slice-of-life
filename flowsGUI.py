@@ -222,7 +222,7 @@ class FlowsApp(tkinter.Tk):
         self.tcol2Dropdown = ttk.OptionMenu(self.curfewFrame,
                                         self.tcol2Var, "Choose Curfew End", *self.tcol2List)
         self.curfewDropdown = ttk.OptionMenu(self.curfewFrame,
-                                         self.curfewVar, "Option 1",
+                                         self.curfewVar, "Choose Curfew Type", "Option 1",
                                          "Option 2")
         
 
@@ -232,7 +232,7 @@ class FlowsApp(tkinter.Tk):
                                                                    self.curfewVar.get(), self.curfewEntry.get()))
         self.curfewEntry = ttk.Entry(self.curfValFrame)
         self.curfewLabel = Label(self.curfewFrame, text="Curfews")
-        self.curfValLabel = Label(self.curfValFrame, text="Time (days)")
+        self.curfValLabel = Label(self.curfValFrame, text="t_curfew\n(days)")
         
         
         

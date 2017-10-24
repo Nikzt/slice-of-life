@@ -102,22 +102,26 @@ class Patient:
     
         
   def Tij(self, interval, t_in_index, t_out_index):
-    t_in = self.times[t_in_index]
-    t_out = self.times[t_out_index]
+    # interval[0] -> start of time slice
+    # interval[1] -> end of time slice
+    t_in = self.times[t_in_index]  # (tij-1) in manuscript one
+    t_out = self.times[t_out_index]  # (tij) in manuscript one
     
     return min(t_out, interval[0] + dt) - max(t_in, interval[0])
 
 
   def Xij(self, interval, t_in_index, t_out_index):
+    # interval[0] -> start of time slice
+    # interval[1] -> end of time slice
     global limbo_states
-    t_in = self.times[t_in_index]
-    t_out = self.times[t_out_index]    
+    t_in = self.times[t_in_index]  # (tij-1) in manuscript one
+    t_out = self.times[t_out_index]  # (tij) in manuscript one
     Tij = self.Tij(interval, t_in_index, t_out_index)
     if t_out == t_in:
       return 1
 
     if t_in_index in limbo_states.keys():
-      
+    # Different calculations if time slice crosses a curfewed time segment
       curf = limbo_states[t_in_index]
       if t_out > t_in + curf:
         return max(0, (min((t_in + curf), interval[0] + dt) - max(t_in, interval[0])) / curf)
