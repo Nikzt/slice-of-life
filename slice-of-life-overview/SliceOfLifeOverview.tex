@@ -1,0 +1,149 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+
+\setlength{\parskip}{1em}
+
+\begin{document}
+
+\title{Slice of Life Code Overview}
+\author{Bence Linder}
+
+\maketitle
+
+\section{Relationships Between Modules}
+
+Slice of Life consists of: 
+
+\begin{itemize}
+	\item \textbf{flowsPlots.py} - reads the output files produced by flows.py and produces graphs and statistics
+	\item \textbf{DataStructures.py} - The data structures which represent the concepts described in Manuscript I, such as time slices and patient visits
+	\item \textbf{flows.py} - Contains functions to read data, convert them into data structures, and write output to .csv files
+	\item \textbf{flowGUI.py} - The user interface
+\end{itemize}
+
+The following is a general overview of which main functions are called for each user action.
+
+1) Run flowsGUI.py, read column names: The user must first select a file in order to continue to the rest of the interface, as the column names are needed to define segments.
+
+\medskip
+
+\begin{lstlisting}
+	flowsGUI.FlowsApp.getHeader(self, filename)
+\end{lstlisting}
+
+2) Read data: After a file is selected, the user must define some parameters to determine which sections of the data is read. These parameters are passed from flowsGUI.py to flows.py, and the data is read.
+
+\medskip
+
+\begin{lstlisting}
+	flowsGUI.FlowsApp.callFlows(self) -> flows.callFromGUI(in_file, time_cols, init_time, end_time, new_dt, extra_fields)
+\end{lstlisting}
+ 
+3) Define segments, filters, and curfews: As the user performs actions on the GUI, the data in flows.py is updated to reflect the changes.
+
+\medskip
+
+\begin{lstlisting}
+	flowsGUI.FlowsApp.addSegment(self) -> flows.addSegment(cols, seg_name)
+	
+	flowsGUI.FlowsApp.addFilter(self, segnumber) -> flows.addFilter(op, val, c_num, segnumber)
+	
+	flowsGUI.FlowsApp.addCurfew(self, tcol1Key, tcol2Key, option, value) -> flows.addCurfew(tcol1, tcol2, option, val)
+\end{lstlisting}
+
+4) Write Data: FlowsGUI.py tells flows.py to take all of the parameters and data supplied by the user so far, and generate the required .csv files.
+
+\medskip
+
+\begin{lstlisting}
+	flowsGUI.FlowsApp.generateReport(self) -> flows.writeData()
+\end{lstlisting}
+
+\section{Important Parameters}
+
+\subsection*{Global Variables}
+
+These lists are populated as the user performs the actions that follow.
+
+flows.py:
+
+\begin{itemize}
+	\item \textbf{slices} (list of TimeSlice): This is populated after reading the data, where init\_time, end\_time, and delta\_t are defined.
+	\item \textbf{patients} (list of Patient): Also populated after reading the data, as init\_time and end\_time determine which rows of the input file are read and converted to the Patient data structure.
+	\item \textbf{timecolumns} (list of int): When the data is read, we need to keep track of which columns contain times.
+	\item \textbf{segments} (list of Segment): This list is added to each time the user defines a segment.
+\end{itemize}
+
+DataScructures.py:
+
+\begin{itemize}
+	\item \textbf{dt} (float): The length of the time slices.
+\end{itemize}
+
+\subsection*{Read Data}
+Input from GUI:
+
+\begin{itemize}
+	\item \textbf{init\_time} (Excel Datetime): Start of the interval of time in which to read data from file.
+	\item \textbf{end\_time} (Excel Datetime): End of the interval of time in which to read data from file.
+	\item \textbf{in\_file} (string): The name of .CSV file to be read.
+	\item \textbf{time\_cols} (list of int): A list of indices of data columns which contain times relating to a patient visit.
+	\item \textbf{extra\_fields} (list of int): A list of indices of data columns which contain times relating to visit characteristics
+\end{itemize}
+
+\subsection*{Defining Segments}
+Input from GUI:
+
+\begin{itemize}
+	\item \textbf{cols} (list of int): A list of 2 indices that are the column numbers for the in and out times for the care segment.
+	\item \textbf{name} (string): Name of the segment.
+\end{itemize}
+
+\subsection*{Defining Filters}
+Input from GUI:
+
+\begin{itemize}
+	\item \textbf{seg\_index} (int): The index of the segment to which the filter is to be added.
+	\item \textbf{c\_num} (int): The column number of the visit characteristic to filter by.
+	\item \textbf{val} (string or float): The value that the filter will compare with the values in the visit characteristic column that was selected in this filter.
+	\item \textbf{op} (string): The operator used to compare values (eg. "$<$", "=", "$>$").
+\end{itemize}
+
+\subsection*{Defining Curfews}
+Input from GUI:
+
+\begin{itemize}
+	\item \textbf{tcol1} (int): Index of time column to start curfew.
+	\item \textbf{tcol2} (int): Index of time column to end curfew.
+	\item \textbf{option} (string): Determines how the curfew is handled.
+	\item \textbf{val} (float): The curfew time.
+\end{itemize}
+
+\section{Data Structures}
+
+
+
+\end{document}
