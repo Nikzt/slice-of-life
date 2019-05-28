@@ -91,9 +91,9 @@ These lists are populated as the user performs the actions that follow.
 flows.py:
 
 \begin{itemize}
-	\item \textbf{slices} (list of TimeSlice): This is populated after reading the data, where init\_time, end\_time, and delta\_t are defined.
-	\item \textbf{patients} (list of Patient): Also populated after reading the data, as init\_time and end\_time determine which rows of the input file are read and converted to the Patient data structure.
-	\item \textbf{timecolumns} (list of int): When the data is read, we need to keep track of which columns contain times.
+	\item \textbf{slices} (list of TimeSlice): This is populated after reading the data, where \textbf{init\_time}, \textbf{end\_time}, and \textbf{delta\_t} are defined. The number of time slices generated is (\textbf{end\_time} - \textbf{init\_time}) / \textbf{delta\_t}
+	\item \textbf{patients} (list of Patient): Also populated after reading the data, as \textbf{init\_time} and \textbf{end\_time} determine which rows of the input file are read and converted to the Patient data structure. The size of \textbf{patients} is equal to the number of rows in the file that fall between \textbf{init\_time} and \textbf{end\_time}
+	\item \textbf{timecolumns} (list of int): When the data is read, we need to keep track of which columns contain times, so that the user can select from a list of valid column indices.
 	\item \textbf{segments} (list of Segment): This list is added to each time the user defines a segment.
 \end{itemize}
 
@@ -144,6 +144,46 @@ Input from GUI:
 
 \section{Data Structures}
 
+\subsection*{TimeSlice}
 
+\begin{itemize}
+	\item \textbf{interval} (list of int): A list of 2 integers representing the indices of the column in the data containing the start time and end time for this timeslice.
+	\item \textbf{patients} (list of Patient): When the output is created, the TimeSlice is populated with Patients that fall within this time slice.
+\end{itemize}
+
+\subsection*{Patient}
+
+\begin{itemize}
+	\item \textbf{times} (list of Excel Datetime): The cells in the row from which this Patient was created that are times. These times must be in increasing order for the calculations to work properly.
+	\item \textbf{extra\_data} (list of string): The cells in the row from which the Patient was created that are visit characteristics.
+	\item \textbf{t\_in} (Excel Datetime): The time at which the patient entered the first care segment, which is simply the first element of \textbf{times}.
+	\item \textbf{t\_out} (Excel Datetime): The time at which the patient left the final care segment, which is simply the last element of \textbf{times}.
+\end{itemize}
+
+\subsection*{Segment}
+
+\begin{itemize}
+	\item \textbf{t\_in\_col} (int): The index of the column which represents the start of the care segment.
+	\item \textbf{t\_out\_col} (int): The index of the column which represents the end of the care segment.
+	\item \textbf{name} (string): The name of the care segment which is chosen by the user in the GUI.
+	\item \textbf{filters} (list of Filter): A list of filters which is to be applied to patients when being sorted into time slices for this segment.
+\end{itemize}
+
+\subsection*{Filter}
+
+\begin{itemize}
+	\item \textbf{c\_num} (int): The visit characteristic column by which to filter patients.
+	\item \textbf{operator} (string): The operator used to compare values in the column to the value of the filter.
+	\item \textbf{value} (string or float): The value being compared to values in the column.
+\end{itemize}
+
+\subsection*{Curfew}
+
+\begin{itemize}
+	\item \textbf{t\_start\_index} (int): The index of the time column where the curfew starts.
+	\item \textbf{t\_end\_index} (int): The index of the time column where the curfew ends.
+	\item \textbf{c\_type} (string): The method by which to handle patients that break the curfew.
+	\item \textbf{time} (Excel Datetime): The cut-off time for the curfew.
+\end{itemize}
 
 \end{document}
